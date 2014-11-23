@@ -18,14 +18,15 @@ using namespace glm;
 
 float win_width = 1024.0f;
 float win_height = 768.0f;
-float aspect_ratio;
 
 ArcBall ab(win_width,win_height);
+vec3 ab_vec;
 vec3 view_vector(-4,-3,-3);
 vec3 view_center(0,0,0);
-vec3 view_up(-12,25,-9);
+vec3 view_up;
 mat4 Projection, View, Model, MVP;
-vec3 old_ab_vec, curr_ab_vec;
+float aspect_ratio;
+float view_vector_length;
 
 GLuint CreateCube();
 GLuint CreateTriangle();
@@ -65,7 +66,7 @@ int main( void )
 	glfwSetKeyCallback(window,key_callback);
 	glfwSetCursorPosCallback(window,cursor_pos_callback);
 	glfwSetMouseButtonCallback(window,button_callback);
-	//glfwSetScrollCallback(window,scroll_callback);
+	glfwSetScrollCallback(window,scroll_callback);
 
 	aspect_ratio = win_width / win_height;
 	// Initialize GLEW
@@ -111,14 +112,15 @@ int main( void )
 		// Projection matrix : 45° Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
 		Projection = glm::perspective(45.0f, aspect_ratio, 0.1f, 100.0f);
 		// Camera matrix
-		view_up = glm::normalize(view_up);
+		view_up = glm::normalize(glm::cross(glm::cross(view_vector,vec3(0,1,0)),view_vector));
+		view_vector_length = glm::length(view_vector);
 		View = glm::lookAt(view_center-view_vector,view_center,view_up);
 //			glm::vec3(4,3,3), // Camera is at (4,3,3), in World Space
 //			glm::vec3(0,0,0), // and looks at the origin
 //			glm::vec3(0,1,0)  // Head is up (set to 0,-1,0 to look upside-down)
 //		);
 		// Model matrix : an identity matrix (model will be at the origin)
-		Model      = glm::mat4(1.0f);  // Changes for each model !
+		Model = glm::mat4(1.0f);  // Changes for each model !
 		// Our ModelViewProjection : multiplication of our 3 matrices
 		MVP = Projection * View * Model; // Remember, matrix multiplication is the other way around
 
@@ -199,19 +201,33 @@ void cursor_pos_callback (GLFWwindow* window, double x, double y) {
 	char sRSuper[3]; strcpy(sRSuper,(glfwGetKey(window,GLFW_KEY_RIGHT_SUPER)==GLFW_PRESS) ? "RP" : "--");
 	printf("MOUSE - %6.2f %6.2f %s %s %s %s %s %s %s %s %s %s %s\n",x,y,sMB1,sMB2,sMB3,sLShift,sRShift,sLAlt,sRAlt,sLCtrl,sRCtrl,sLSuper,sRSuper);
 */
+	vec3 curr_ab_vec;
 	bool bMB1 = (glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_1)==GLFW_PRESS);
+	bool bMB2 = (glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_2)==GLFW_PRESS);
+	bool bMB3 = (glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_3)==GLFW_PRESS);
 	bool bCtrl = (glfwGetKey(window,GLFW_KEY_LEFT_CONTROL)==GLFW_PRESS) || (glfwGetKey(window,GLFW_KEY_RIGHT_CONTROL)==GLFW_PRESS);
 	if (bMB1 && bCtrl) {
 		curr_ab_vec = ab.GetVector(x,y);
-		vec3 axis = glm::cross(old_ab_vec,curr_ab_vec);
-		double s = sqrt((1+glm::dot(old_ab_vec,curr_ab_vec))*2.0f);
+		vec3 axis = glm::cross(ab_vec,curr_ab_vec);
+		double s = sqrt((1.0f+glm::dot(ab_vec,curr_ab_vec))*2.0f);
 		quat qrot(s*0.5f,axis.x/s,axis.y/s,axis.z/s);
 		view_vector = view_vector * qrot;
 		view_up = view_up * qrot;
-		old_ab_vec = curr_ab_vec;
-		printf("MOUSE - %6.2f,%6.2f %6.2f,%6.2f,%6.2f\n",x,y,view_vector.x,view_vector.y,view_vector.z);
+		ab_vec = curr_ab_vec;
+	} else if (bMB2 && bCtrl) {
+		curr_ab_vec = ab.GetVector(x,y);
+		vec3 delta = (curr_ab_vec-ab_vec)*view_vector_length;	//-- in camera space 
+		delta = glm::inverse(glm::mat3(View))*delta;	//-- in world space
+		view_center = view_center - delta;
+		ab_vec = curr_ab_vec;
+	} else if (bMB3 && bCtrl) {
+		curr_ab_vec = ab.GetVector(x,y);
+		float factor = curr_ab_vec.y-ab_vec.y;
+		view_vector = view_vector*(1.0f+factor);
+		view_vector_length = glm::length(view_vector);
+		ab_vec = curr_ab_vec;
 	} else {
-		old_ab_vec = ab.GetVector(x,y);
+		ab_vec = ab.GetVector(x,y);
 	}
 }
 
@@ -227,7 +243,13 @@ void button_callback (GLFWwindow* window, int button, int action, int mods) {
 }
 
 void scroll_callback (GLFWwindow* window, double x, double y) {
-	printf("SCROLL - %6.2f %6.2f\n",x,y);
+	if (y>0.0f) {
+		view_vector = view_vector*0.9f;
+		view_vector_length = glm::length(view_vector);
+	} else if (y<0.0f) {
+		view_vector = view_vector*1.1f;
+		view_vector_length = glm::length(view_vector);
+	}
 }
 
 
