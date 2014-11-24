@@ -15,6 +15,7 @@ using namespace glm;
 #include <common/shader.hpp>
 #include "ArcBall.hpp"
 #include "HeightMesh.hpp"
+#include "SineWaveMesh.hpp"
 
 float win_width = 1024.0f;
 float win_height = 768.0f;
@@ -33,9 +34,11 @@ GLuint CreateCube();
 GLuint CreateTriangle();
 GLuint CreateSquare();
 
-#define WAVE_GRID_SIZE 10
-#define WAVE_SIZE 4.0f
-HeightMesh* waves;
+#define WAVE_GRID_SIZE 400
+#define WAVE_SIZE 20.0f
+SineWaveMesh* waves;
+
+double timeFromStart=0.0f;
 
 void framebuffer_size_callback(GLFWwindow*, int, int);
 void key_callback (GLFWwindow*, int, int, int, int);
@@ -88,7 +91,9 @@ int main( void )
 	//GLuint triangleVAO = CreateTriangle();
 	GLuint squareVAO = CreateSquare();
 
-	waves = new HeightMesh(WAVE_GRID_SIZE,WAVE_GRID_SIZE,WAVE_SIZE,WAVE_SIZE);
+	waves = new SineWaveMesh(WAVE_GRID_SIZE,WAVE_GRID_SIZE,WAVE_SIZE,WAVE_SIZE);
+	waves->AddWave(glm::vec2(1,1),0.2f,4.0f,1.0f);
+	waves->AddWave(glm::vec2(0,4),0.1f,2.0f,2.0f);
 
 	// Create and compile our GLSL program from the shaders
 	GLuint programID = LoadShaders( "SimpleVertexShader.vertexshader", "SimpleFragmentShader.fragmentshader" );
@@ -103,7 +108,7 @@ int main( void )
 	// Accept fragment if it closer to the camera than the former one
 	glDepthFunc(GL_LESS);
 	// Dark blue background
-	glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
+	glClearColor(0.0f, 0.0f, 0.2f, 0.0f);
 
 // Check if the ESC key was pressed or the window was closed
 //	while( glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS &&
@@ -143,7 +148,9 @@ int main( void )
 		// Draw square
 		//glBindVertexArray(squareVAO);
 		//glDrawElements(GL_LINES, 8, GL_UNSIGNED_INT, (void*)0);
-
+		double t = glfwGetTime();
+		waves->Simulate(t-timeFromStart);
+		timeFromStart = t;
 		waves->Display();
 
 //		glBindVertexArray(0);

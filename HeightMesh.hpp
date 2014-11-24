@@ -14,15 +14,13 @@ class HeightMesh {
 		~HeightMesh();
 		GLuint VAO();
 		void Display();
-	private:
+	protected:
 		unsigned int x_sz, z_sz;
 		float x_inc;
 		float z_inc;
-		float* height;
 		GLuint id[3];
 		unsigned int* index;
-		//glm::vec3* vertex;
-		float *vertex;
+		glm::vec3* vertex;
 		unsigned int array_sz, index_sz;
 };
 

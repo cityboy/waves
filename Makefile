@@ -16,7 +16,7 @@ LIBS = -lGLU -lGL -lX11 -lXext -lglfw3 -lGLEW -lGLU -lGL -lGLU -lXrandr -lXext -
 
 all: waves
 
-waves: waves.o ArcBall.o HeightMesh.o ../common/shader.o
+waves: waves.o ArcBall.o HeightMesh.o SineWaveMesh.o ../common/shader.o
 	@$(CC) -o $@ $^ $(LFLAGS) $(LPATH) $(LIBS)
 	
 .cpp.o: 
