@@ -13,8 +13,8 @@ GLFWwindow* window;
 using namespace glm;
 
 #include <common/shader.hpp>
-
 #include "ArcBall.hpp"
+#include "HeightMesh.hpp"
 
 float win_width = 1024.0f;
 float win_height = 768.0f;
@@ -28,9 +28,14 @@ mat4 Projection, View, Model, MVP;
 float aspect_ratio;
 float view_vector_length;
 
+//-- These functions from the tutorial will not be used. 
 GLuint CreateCube();
 GLuint CreateTriangle();
 GLuint CreateSquare();
+
+#define WAVE_GRID_SIZE 10
+#define WAVE_SIZE 4.0f
+HeightMesh* waves;
 
 void framebuffer_size_callback(GLFWwindow*, int, int);
 void key_callback (GLFWwindow*, int, int, int, int);
@@ -77,11 +82,13 @@ int main( void )
 	}
 
 	// Ensure we can capture the escape key being pressed below
-	glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
+	//glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
 
-	GLuint cubeVAO = CreateCube();
-	GLuint triangleVAO = CreateTriangle();
+	//GLuint cubeVAO = CreateCube();
+	//GLuint triangleVAO = CreateTriangle();
 	GLuint squareVAO = CreateSquare();
+
+	waves = new HeightMesh(WAVE_GRID_SIZE,WAVE_GRID_SIZE,WAVE_SIZE,WAVE_SIZE);
 
 	// Create and compile our GLSL program from the shaders
 	GLuint programID = LoadShaders( "SimpleVertexShader.vertexshader", "SimpleFragmentShader.fragmentshader" );
@@ -98,17 +105,10 @@ int main( void )
 	// Dark blue background
 	glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
 
-	double x,y,o_x,o_y;
-	o_x = 0;
-	o_y = 0;
 // Check if the ESC key was pressed or the window was closed
 //	while( glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS &&
 //		   glfwWindowShouldClose(window) == 0 );
 	while( !glfwWindowShouldClose(window) ) {
-//		glfwGetCursorPos(window,&x,&y);
-//		if ((x!=o_x)||(y!=o_y))
-//			printf("%4f %4f\n",x,y);
-
 		// Projection matrix : 45° Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
 		Projection = glm::perspective(45.0f, aspect_ratio, 0.1f, 100.0f);
 		// Camera matrix
@@ -132,17 +132,19 @@ int main( void )
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		// Draw nothing, see you in tutorial 2 !
 		// 1rst attribute buffer : vertices
-		glBindVertexArray(cubeVAO);
+		//glBindVertexArray(cubeVAO);
 		// Draw the Cube
-		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, (void*)0);
+		//glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, (void*)0);
  
 		// Draw triangle
-		glBindVertexArray(triangleVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		//glBindVertexArray(triangleVAO);
+		//glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		// Draw square
-		glBindVertexArray(squareVAO);
-		glDrawElements(GL_LINES, 8, GL_UNSIGNED_INT, (void*)0);
+		//glBindVertexArray(squareVAO);
+		//glDrawElements(GL_LINES, 8, GL_UNSIGNED_INT, (void*)0);
+
+		waves->Display();
 
 //		glBindVertexArray(0);
 //		glDisableVertexAttribArray(0);
@@ -161,6 +163,8 @@ int main( void )
 //	glDeleteVertexArrays(1,&VertexArrayID);
 //	glDeleteVertexArrays(1,&triangleArrayID);
 //	glDeleteVertexArrays(1,&squareVao);
+
+	delete waves;
 
 	// Close OpenGL window and terminate GLFW
 	glfwTerminate();
@@ -187,20 +191,6 @@ void key_callback (GLFWwindow* window, int key, int scancode, int action, int mo
 }
 
 void cursor_pos_callback (GLFWwindow* window, double x, double y) {
-/*
-	char sMB1[3]; strcpy(sMB1,(glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_1)==GLFW_PRESS) ? "B1" : "--");
-	char sMB2[3]; strcpy(sMB2,(glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_2)==GLFW_PRESS) ? "B2" : "--");
-	char sMB3[3]; strcpy(sMB3,(glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_3)==GLFW_PRESS) ? "B3" : "--");
-	char sLShift[3]; strcpy(sLShift,(glfwGetKey(window,GLFW_KEY_LEFT_SHIFT)==GLFW_PRESS) ? "LS" : "--");
-	char sRShift[3]; strcpy(sRShift,(glfwGetKey(window,GLFW_KEY_RIGHT_SHIFT)==GLFW_PRESS) ? "RS" : "--");
-	char sLAlt[3]; strcpy(sLAlt,(glfwGetKey(window,GLFW_KEY_LEFT_ALT)==GLFW_PRESS) ? "LA" : "--");
-	char sRAlt[3]; strcpy(sRAlt,(glfwGetKey(window,GLFW_KEY_RIGHT_ALT)==GLFW_PRESS) ? "RA" : "--");
-	char sLCtrl[3]; strcpy(sLCtrl,(glfwGetKey(window,GLFW_KEY_LEFT_CONTROL)==GLFW_PRESS) ? "LC" : "--");
-	char sRCtrl[3]; strcpy(sRCtrl,(glfwGetKey(window,GLFW_KEY_RIGHT_CONTROL)==GLFW_PRESS) ? "RC" : "--");
-	char sLSuper[3]; strcpy(sLSuper,(glfwGetKey(window,GLFW_KEY_LEFT_SUPER)==GLFW_PRESS) ? "LP" : "--");
-	char sRSuper[3]; strcpy(sRSuper,(glfwGetKey(window,GLFW_KEY_RIGHT_SUPER)==GLFW_PRESS) ? "RP" : "--");
-	printf("MOUSE - %6.2f %6.2f %s %s %s %s %s %s %s %s %s %s %s\n",x,y,sMB1,sMB2,sMB3,sLShift,sRShift,sLAlt,sRAlt,sLCtrl,sRCtrl,sLSuper,sRSuper);
-*/
 	vec3 curr_ab_vec;
 	bool bMB1 = (glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_1)==GLFW_PRESS);
 	bool bMB2 = (glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_2)==GLFW_PRESS);
