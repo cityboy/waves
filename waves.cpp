@@ -15,7 +15,7 @@ using namespace glm;
 #include <common/shader.hpp>
 #include "ArcBall.hpp"
 #include "HeightMesh.hpp"
-#include "SineWaveMesh.hpp"
+#include "GerstnerWaveMesh.hpp"
 
 float win_width = 1024.0f;
 float win_height = 768.0f;
@@ -34,9 +34,9 @@ GLuint CreateCube();
 GLuint CreateTriangle();
 GLuint CreateSquare();
 
-#define WAVE_GRID_SIZE 400
+#define WAVE_GRID_SIZE 200
 #define WAVE_SIZE 20.0f
-SineWaveMesh* waves;
+GerstnerWaveMesh* waves;
 
 double timeFromStart=0.0f;
 
@@ -91,9 +91,14 @@ int main( void )
 	//GLuint triangleVAO = CreateTriangle();
 	GLuint squareVAO = CreateSquare();
 
-	waves = new SineWaveMesh(WAVE_GRID_SIZE,WAVE_GRID_SIZE,WAVE_SIZE,WAVE_SIZE);
-	waves->AddWave(glm::vec2(1,1),0.2f,4.0f,1.0f);
-	waves->AddWave(glm::vec2(0,4),0.1f,2.0f,2.0f);
+	waves = new GerstnerWaveMesh(WAVE_GRID_SIZE,WAVE_GRID_SIZE,WAVE_SIZE,WAVE_SIZE);
+	//void Randomize(unsigned int n, float max_A, float max_L, float max_s);
+	waves->Randomize(2,0.5f,3.0f,5.0f,1.0f);
+//	waves->Randomize(5,0.2f,7.0f,10.0f,0.1f);
+	waves->Randomize(5,0.1f,1.0f,2.0f,2.0f);
+//	waves->AddWave(glm::vec2(1,1),0.3f,4.0f,0.2f,0.5f);
+//	waves->AddWave(glm::vec2(0,4),0.1f,2.0f,0.5f,0.1f);
+//	waves->AddWave(glm::vec2(2,-1),0.2f,10.0f,0.1f,0.3f);
 
 	// Create and compile our GLSL program from the shaders
 	GLuint programID = LoadShaders( "SimpleVertexShader.vertexshader", "SimpleFragmentShader.fragmentshader" );

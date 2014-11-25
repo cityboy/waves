@@ -72,4 +72,12 @@ void HeightMesh::Display () {
 	glDrawElements(GL_LINES, index_sz, GL_UNSIGNED_INT, (void*)0);
 }
 
+void HeightMesh::AddWave() {}
+
+void HeightMesh::Simulate(float dt) {}
+
+void HeightMesh::Randomize(unsigned int n) {}
+
+
+
 
