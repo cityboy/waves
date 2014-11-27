@@ -14,9 +14,9 @@ class HeightMesh {
 		~HeightMesh();
 		GLuint VAO();
 		void Display();
-		virtual void AddWave();
-		virtual void Simulate(float dt);
-		virtual void Randomize(unsigned int n);
+		void AddWave();
+		void Simulate(float dt);
+		void Randomize(unsigned int n);
 	protected:
 		unsigned int x_sz, z_sz;
 		float x_inc;

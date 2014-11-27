@@ -1,5 +1,14 @@
 #version 330 core
 
+#define MAX_WAVES 10
+#define NUM_PARAMS 6
+#define PARAM_DIR_X 0
+#define PARAM_DIR_Y 1
+#define PARAM_AMP 2
+#define PARAM_FREQ 3
+#define PARAM_PHASE 4
+#define PARAM_Q 5
+
 // Input vertex data, different for all executions of this shader.
 layout(location = 0) in vec3 vertexPosition_modelspace;
 // Notice that the "1" here equals the "1" in glVertexAttribPointer
@@ -7,12 +16,25 @@ layout(location = 0) in vec3 vertexPosition_modelspace;
 // Output data ; will be interpolated for each fragment.
 //out vec3 fragmentColor;
 uniform mat4 MVP;
+uniform float wave_param[MAX_WAVES*NUM_PARAMS];
+uniform int num_waves;
+uniform float cum_time;
  
 void main(){
  
     // Output position of the vertex, in clip space : MVP * position
     vec4 v = vec4(vertexPosition_modelspace,1); // Transform an homogeneous 4D vector, remember ?
-    gl_Position = MVP * v;
+	//-- Gerstner wave
+	gl_Position = v;
+	for (int i=0; i<num_waves; i++) {
+		int p = i*NUM_PARAMS;
+		float phi = (wave_param[p+PARAM_DIR_X]*v.x+wave_param[p+PARAM_DIR_Y]*v.z)*wave_param[p+PARAM_FREQ] + cum_time*wave_param[p+PARAM_PHASE];
+		gl_Position.x += wave_param[p+PARAM_AMP] * cos(phi) * wave_param[p+PARAM_Q] * wave_param[p+PARAM_DIR_X];
+		gl_Position.y += wave_param[p+PARAM_AMP] * sin(phi);
+		gl_Position.z += wave_param[p+PARAM_AMP] * cos(phi) * wave_param[p+PARAM_Q] * wave_param[p+PARAM_DIR_Y];
+	}
+
+    gl_Position = MVP * gl_Position;
     // The color of each vertex will be interpolated
     // to produce the color of each fragment
 //    fragmentColor = vertexColor;

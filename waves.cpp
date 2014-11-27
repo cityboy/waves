@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <time.h>
 
 #include <GL/glew.h>
 
@@ -37,7 +38,8 @@ GLuint CreateSquare();
 
 #define WAVE_GRID_SIZE 200
 #define WAVE_SIZE 20.0f
-GerstnerWaveMesh* waves;
+#define NUM_WAVES 10
+HeightMesh* waves;
 
 double timeFromStart=0.0f;
 double elapseTime=0.0f;
@@ -48,6 +50,31 @@ void key_callback (GLFWwindow*, int, int, int, int);
 void cursor_pos_callback (GLFWwindow*, double, double);
 void button_callback (GLFWwindow*, int, int, int);
 void scroll_callback (GLFWwindow*, double, double);
+
+void Randomize (unsigned int n, float max_A, float min_L, float max_L, float max_s, float* buffer) {
+	float Dir_x, Dir_y;
+	float A, L, s, Q;
+	float f, p;
+	float max_rand = (float)RAND_MAX;
+	srand(time(NULL));
+	for (unsigned int i=0; i<n; i++) {
+		Dir_x = (float)rand()/max_rand;
+		Dir_y = (float)rand()/max_rand;
+		A = (float)rand()/max_rand * max_A;
+		L = (float)rand()/max_rand * (max_L-min_L) + min_L;
+		f = 2.0f * M_PI / L;
+		s = (float)rand()/max_rand * max_s;
+		p = s * f;
+		Q = ((float)rand()/max_rand) * (L/(A*2.0f*M_PI)); // / (A*f);
+		*buffer++ = Dir_x;
+		*buffer++ = Dir_y;
+		*buffer++ = A;
+		*buffer++ = f;
+		*buffer++ = p;
+		*buffer++ = Q;
+	}
+}
+
 
 int main( void )
 {
@@ -90,17 +117,6 @@ int main( void )
 	// Ensure we can capture the escape key being pressed below
 	//glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
 
-	//GLuint cubeVAO = CreateCube();
-	//GLuint triangleVAO = CreateTriangle();
-	//GLuint squareVAO = CreateSquare();
-
-	waves = new GerstnerWaveMesh(WAVE_GRID_SIZE,WAVE_GRID_SIZE,WAVE_SIZE,WAVE_SIZE);
-	//void Randomize(unsigned int n, float max_A, float max_L, float max_s);
-	waves->Randomize(1,0.7f,3.0f,5.0f,1.0f);
-	waves->Randomize(2,0.3f,1.0f,3.0f,1.0f);
-	waves->Randomize(5,0.1f,1.0f,2.0f,2.0f);
-	//waves->AddWave(glm::vec2(1,1),0.3f,4.0f,0.2f,0.5f);
-
 	// Create and compile our GLSL program from the shaders
 	GLuint programID = LoadShaders( "SimpleVertexShader.vertexshader", "SimpleFragmentShader.fragmentshader" );
 	// Use our shader
@@ -108,6 +124,22 @@ int main( void )
 	// Get a handle for our "MVP" uniform.
 	// Only at initialisation time.
 	GLuint MatrixID = glGetUniformLocation(programID, "MVP");
+	GLuint ParamID = glGetUniformLocation(programID, "wave_param");
+	GLuint NumID = glGetUniformLocation(programID, "num_waves");
+	GLuint TimeID = glGetUniformLocation(programID, "cum_time");
+
+	//GLuint cubeVAO = CreateCube();
+	//GLuint triangleVAO = CreateTriangle();
+	//GLuint squareVAO = CreateSquare();
+
+	waves = new HeightMesh(WAVE_GRID_SIZE,WAVE_GRID_SIZE,WAVE_SIZE,WAVE_SIZE);
+	float param[10*6];
+//	param[0]=1.0f;  param[1]=1.0f;  param[2]=1.0f;  param[3] = 1.25f;  param[4]=2.5f;  param[5]=0.5f;  
+	Randomize(1,0.7f,3.0f,5.0f,1.0f,param);
+	Randomize(2,0.3f,1.0f,3.0f,1.0f,param+6);
+	Randomize(5,0.1f,0.5f,2.0f,2.0f,param+3*6);
+	glUniform1fv(ParamID,8*6,param);
+	glUniform1i(NumID,8);
 
 	// Enable depth test
 	glEnable(GL_DEPTH_TEST);
@@ -149,8 +181,9 @@ int main( void )
 		//glDrawElements(GL_LINES, 8, GL_UNSIGNED_INT, (void*)0);
 		double t = glfwGetTime();
 		double dt = t-timeFromStart;
-		waves->Simulate(dt);
+//		waves->Simulate(dt);
 		timeFromStart = t;
+		glUniform1f(TimeID,timeFromStart);
 		waves->Display();
 		//--- Calculate FPS
 		numOfFrames++;
