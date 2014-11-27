@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <math.h>
 
 #include <GL/glew.h>
 
@@ -17,6 +17,7 @@ using namespace glm;
 #include "HeightMesh.hpp"
 #include "GerstnerWaveMesh.hpp"
 
+char sWindowTitle[] = "WAVES";
 float win_width = 1024.0f;
 float win_height = 768.0f;
 
@@ -39,6 +40,8 @@ GLuint CreateSquare();
 GerstnerWaveMesh* waves;
 
 double timeFromStart=0.0f;
+double elapseTime=0.0f;
+unsigned int numOfFrames=0;
 
 void framebuffer_size_callback(GLFWwindow*, int, int);
 void key_callback (GLFWwindow*, int, int, int, int);
@@ -62,7 +65,7 @@ int main( void )
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	// Open a window and create its OpenGL context
-	window = glfwCreateWindow( (int)win_width, (int)win_height, "Playground", NULL, NULL);
+	window = glfwCreateWindow( (int)win_width, (int)win_height, sWindowTitle, NULL, NULL);
 	if( window == NULL ){
 		fprintf( stderr, "Failed to open GLFW window. If you have an Intel GPU, they are not 3.3 compatible. Try the 2.1 version of the tutorials.\n" );
 		glfwTerminate();
@@ -89,16 +92,14 @@ int main( void )
 
 	//GLuint cubeVAO = CreateCube();
 	//GLuint triangleVAO = CreateTriangle();
-	GLuint squareVAO = CreateSquare();
+	//GLuint squareVAO = CreateSquare();
 
 	waves = new GerstnerWaveMesh(WAVE_GRID_SIZE,WAVE_GRID_SIZE,WAVE_SIZE,WAVE_SIZE);
 	//void Randomize(unsigned int n, float max_A, float max_L, float max_s);
-	waves->Randomize(2,0.5f,3.0f,5.0f,1.0f);
-//	waves->Randomize(5,0.2f,7.0f,10.0f,0.1f);
+	waves->Randomize(1,0.7f,3.0f,5.0f,1.0f);
+	waves->Randomize(2,0.3f,1.0f,3.0f,1.0f);
 	waves->Randomize(5,0.1f,1.0f,2.0f,2.0f);
-//	waves->AddWave(glm::vec2(1,1),0.3f,4.0f,0.2f,0.5f);
-//	waves->AddWave(glm::vec2(0,4),0.1f,2.0f,0.5f,0.1f);
-//	waves->AddWave(glm::vec2(2,-1),0.2f,10.0f,0.1f,0.3f);
+	//waves->AddWave(glm::vec2(1,1),0.3f,4.0f,0.2f,0.5f);
 
 	// Create and compile our GLSL program from the shaders
 	GLuint programID = LoadShaders( "SimpleVertexShader.vertexshader", "SimpleFragmentShader.fragmentshader" );
@@ -115,9 +116,6 @@ int main( void )
 	// Dark blue background
 	glClearColor(0.0f, 0.0f, 0.2f, 0.0f);
 
-// Check if the ESC key was pressed or the window was closed
-//	while( glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS &&
-//		   glfwWindowShouldClose(window) == 0 );
 	while( !glfwWindowShouldClose(window) ) {
 		// Projection matrix : 45° Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
 		Projection = glm::perspective(45.0f, aspect_ratio, 0.1f, 100.0f);
@@ -125,10 +123,6 @@ int main( void )
 		view_up = glm::normalize(glm::cross(glm::cross(view_vector,vec3(0,1,0)),view_vector));
 		view_vector_length = glm::length(view_vector);
 		View = glm::lookAt(view_center-view_vector,view_center,view_up);
-//			glm::vec3(4,3,3), // Camera is at (4,3,3), in World Space
-//			glm::vec3(0,0,0), // and looks at the origin
-//			glm::vec3(0,1,0)  // Head is up (set to 0,-1,0 to look upside-down)
-//		);
 		// Model matrix : an identity matrix (model will be at the origin)
 		Model = glm::mat4(1.0f);  // Changes for each model !
 		// Our ModelViewProjection : multiplication of our 3 matrices
@@ -154,28 +148,26 @@ int main( void )
 		//glBindVertexArray(squareVAO);
 		//glDrawElements(GL_LINES, 8, GL_UNSIGNED_INT, (void*)0);
 		double t = glfwGetTime();
-		waves->Simulate(t-timeFromStart);
+		double dt = t-timeFromStart;
+		waves->Simulate(dt);
 		timeFromStart = t;
 		waves->Display();
-
-//		glBindVertexArray(0);
-//		glDisableVertexAttribArray(0);
-//		glDisableVertexAttribArray(1);
-
+		//--- Calculate FPS
+		numOfFrames++;
+		elapseTime += dt;
+		if (elapseTime>1.0f) {
+			char buffer[100];
+			sprintf(buffer,"%s - %8.3f",sWindowTitle,(float)numOfFrames/elapseTime);
+			numOfFrames = 0;
+			elapseTime = 0.0f;
+			glfwSetWindowTitle(window,buffer);
+		}
 		// Swap buffers
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 
 	} 
 	
-//	glDeleteBuffers(1,&vertexbuffer);
-//	glDeleteBuffers(1,&colorbuffer);
-//	glDeleteBuffers(2,trianglebuffer);
-//	glDeleteBuffers(2,squareVbo);
-//	glDeleteVertexArrays(1,&VertexArrayID);
-//	glDeleteVertexArrays(1,&triangleArrayID);
-//	glDeleteVertexArrays(1,&squareVao);
-
 	delete waves;
 
 	// Close OpenGL window and terminate GLFW
@@ -210,12 +202,16 @@ void cursor_pos_callback (GLFWwindow* window, double x, double y) {
 	bool bCtrl = (glfwGetKey(window,GLFW_KEY_LEFT_CONTROL)==GLFW_PRESS) || (glfwGetKey(window,GLFW_KEY_RIGHT_CONTROL)==GLFW_PRESS);
 	if (bMB1 && bCtrl) {
 		curr_ab_vec = ab.GetVector(x,y);
-		vec3 axis = glm::cross(ab_vec,curr_ab_vec);
-		double s = sqrt((1.0f+glm::dot(ab_vec,curr_ab_vec))*2.0f);
-		quat qrot(s*0.5f,axis.x/s,axis.y/s,axis.z/s);
+		vec3 cross = glm::cross(ab_vec,curr_ab_vec);
+		double dot = glm::dot(ab_vec,curr_ab_vec);
+		quat qrot(1.0f+dot,cross.x,cross.y,cross.z);
+		//double s = sqrt((1.0f+glm::dot(ab_vec,curr_ab_vec))*2.0f);
+		//quat qrot(s*0.5f,axis.x/s,axis.y/s,axis.z/s);
 		view_vector = view_vector * qrot;
 		view_up = view_up * qrot;
 		ab_vec = curr_ab_vec;
+//printf("[%12.10f,%12.10f,%12.10f] [%12.10f,%12.10f,%12.10f] %12.10f %12.10f,%12.10f,%12.10f\n",
+//ab_vec.x,ab_vec.y,ab_vec.z,curr_ab_vec.x,curr_ab_vec.y,curr_ab_vec.z,glm::dot(ab_vec,curr_ab_vec),axis.x,axis.y,axis.z);
 	} else if (bMB2 && bCtrl) {
 		curr_ab_vec = ab.GetVector(x,y);
 		vec3 delta = (curr_ab_vec-ab_vec)*view_vector_length;	//-- in camera space 

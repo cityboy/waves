@@ -60,6 +60,8 @@ HeightMesh::HeightMesh (unsigned int xc, unsigned int zc, float xl, float zl) {
 }
 
 HeightMesh::~HeightMesh () {
+	glDeleteBuffers(2,id+1);
+	glDeleteVertexArrays(1,id);
 	delete[] vertex;
 	delete[] index;
 }
