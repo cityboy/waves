@@ -10,11 +10,23 @@ HeightMesh::HeightMesh (unsigned int xc, unsigned int zc, float xl, float zl) {
 	x_inc = xl / (float)(xc-1);
 	z_inc = zl / (float)(zc-1);
 
-	array_sz = x_sz*z_sz;  //9
-	index_sz = x_sz*(z_sz-1)*2 + (x_sz-1)*z_sz*2;  //24
+	array_sz = x_sz*z_sz; 
+//	index_sz = x_sz*(z_sz-1)*2 + (x_sz-1)*z_sz*2; 
+	index_sz = (x_sz-1) * (z_sz-1) * 6;
+//	index_sz = 6 * 6;
 
 	vertex = new glm::vec3[array_sz];
 	index = new unsigned int[index_sz];
+
+//	unsigned int index_array[] = {
+//		0, 1, 4,  0, 4, 3,
+//		1, 2, 5,  1, 5, 4,
+//		3, 4, 7,  3, 7, 6,
+//		4, 5, 8,  4, 8, 7,
+//		6, 7,10,  6,10, 9,
+//		7, 8,11,  7,11,10
+//	};
+//	index = index_array;
 
 	//-- Construct vertex data
 	float x_start = xl / 2.0f;
@@ -30,6 +42,20 @@ HeightMesh::HeightMesh (unsigned int xc, unsigned int zc, float xl, float zl) {
 	}
 	//-- Construct index data
 	unsigned int *ptr = index;
+	for (unsigned int i=0; i<(x_sz-1); i++) {
+		for (unsigned int k=0; k<(z_sz-1); k++) {
+			// triangel 1
+			*ptr++ = i*z_sz + k;
+			*ptr++ = i*z_sz + (k+1);
+			*ptr++ = (i+1)*z_sz + (k+1);
+			// triangle 2
+			*ptr++ = i*z_sz + k;
+			*ptr++ = (i+1)*z_sz + (k+1);
+			*ptr++ = (i+1)*z_sz + k;
+		}
+	}
+
+/*
 	for (unsigned int i=0; i<x_sz; i++) {
 		for (unsigned int k=0; k<z_sz-1; k++) {
 			*ptr++ = i*z_sz + k;
@@ -42,6 +68,7 @@ HeightMesh::HeightMesh (unsigned int xc, unsigned int zc, float xl, float zl) {
 			*ptr++ = (i+1)*z_sz + k;
 		}
 	}
+*/
 	//-- VAO
 	glGenVertexArrays(1, id);
 	glBindVertexArray(id[0]);
@@ -71,7 +98,8 @@ GLuint HeightMesh::VAO () { return id[0]; }
 
 void HeightMesh::Display () {
 	glBindVertexArray(id[0]);
-	glDrawElements(GL_LINES, index_sz, GL_UNSIGNED_INT, (void*)0);
+//	glDrawElements(GL_LINES, index_sz, GL_UNSIGNED_INT, (void*)0);
+	glDrawElements(GL_TRIANGLES, index_sz, GL_UNSIGNED_INT, (void*)0);
 }
 
 void HeightMesh::AddWave() {}
