@@ -14,8 +14,8 @@ class ArcBall {
 		void SetScreenSize(double w, double h);
 		glm::vec3 GetVector(double x, double y);
 	private:
-		double screen_width, screen_height;
-		double half_diameter;
+		double half_width, half_height;
+		double radius;
 };
 
 #endif

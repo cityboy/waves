@@ -133,13 +133,30 @@ int main( void )
 	//GLuint squareVAO = CreateSquare();
 
 	waves = new HeightMesh(WAVE_GRID_SIZE,WAVE_GRID_SIZE,WAVE_SIZE,WAVE_SIZE);
-	float param[10*6];
+	float param[10*6] = {
+		 1.0f, 0.3f, 1.2f, 0.6f, 2.1f, 0.4f,
+		-0.2f, 0.7f, 0.5f, 1.3f, 0.8f, 0.3f,
+		 2.5f,-1.0f, 0.2f, 1.8f, 8.0f, 0.2f,
+		 1.0f, 0.6f, 0.1f, 0.9f, 0.2f, 0.1f,
+		-0.8f, 1.2f, 0.1f, 1.2f, 0.5f, 0.0f,
+		-2.7f,-1.3f, 0.02f, 2.3f, 3.2f, 0.0f,
+		-1.7f, 0.3f, 0.04f, 3.6f, 1.2f, 0.1f,
+		-3.0f, 1.3f, 0.05f, 6.6f, 0.5f, 0.1f,
+		 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+		 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f
+//		-3.0f, 1.3f, 0.3f, 6.6f, 1.2f, 0.1f,
+//		 1.5f,-0.9f, 0.1f, 5.5f, 2.7f, 0.2f,
+//		 0.2f, 6.2f, 0.2f, 2.0f, 0.3f, 0.2f,
+//		 1.7f, 0.2f, 0.3f, 1.8f, 1.1f, 0.1f,
+//		 0.6f,-2.0f, 0.2f, 4.1f, 4.0f, 0.1f
+	};
 //	param[0]=1.0f;  param[1]=1.0f;  param[2]=1.0f;  param[3] = 1.25f;  param[4]=2.5f;  param[5]=0.5f;  
-	Randomize(1,0.7f,3.0f,5.0f,1.0f,param);
-	Randomize(2,0.3f,1.0f,3.0f,1.0f,param+6);
-	Randomize(5,0.1f,0.5f,2.0f,2.0f,param+3*6);
-	glUniform1fv(ParamID,8*6,param);
-	glUniform1i(NumID,8);
+	
+//	Randomize(1,0.7f,3.0f,5.0f,1.0f,param);
+//	Randomize(2,0.3f,1.0f,3.0f,1.0f,param+6);
+//	Randomize(5,0.1f,0.5f,2.0f,2.0f,param+3*6);
+	glUniform1fv(ParamID,10*6,param);
+	glUniform1i(NumID,10);
 
 	// Enable depth test
 	glEnable(GL_DEPTH_TEST);
@@ -222,7 +239,7 @@ void framebuffer_size_callback (GLFWwindow* window, int width, int height) {
 
 
 void key_callback (GLFWwindow* window, int key, int scancode, int action, int mods) {
-//	printf("KEY - %d %d %d %d\n",key,scancode,action,mods);
+	//printf("KEY - %d %d %d %d\n",key,scancode,action,mods);
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
 }
@@ -237,14 +254,17 @@ void cursor_pos_callback (GLFWwindow* window, double x, double y) {
 		curr_ab_vec = ab.GetVector(x,y);
 		vec3 cross = glm::cross(ab_vec,curr_ab_vec);
 		double dot = glm::dot(ab_vec,curr_ab_vec);
-		quat qrot(1.0f+dot,cross.x,cross.y,cross.z);
-		//double s = sqrt((1.0f+glm::dot(ab_vec,curr_ab_vec))*2.0f);
-		//quat qrot(s*0.5f,axis.x/s,axis.y/s,axis.z/s);
-		view_vector = view_vector * qrot;
-		view_up = view_up * qrot;
+		//-- Standard method to calculate quaterion		
+		//double angle = acos(dot);
+		//double c = cos(0.5f*angle);
+		//double s = sin(0.5f*angle);
+		//quat qrot(c,cross.x*s,cross.y*s,cross.z*s);
+		//-- Beautiful method to calculate quaterion
+		//-- http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors
+		quat qrot = normalize(quat(1.0f+dot,cross.x,cross.y,cross.z));
+		view_vector = conjugate(qrot) * view_vector * qrot;
+		view_up = conjugate(qrot) * view_up * qrot;
 		ab_vec = curr_ab_vec;
-//printf("[%12.10f,%12.10f,%12.10f] [%12.10f,%12.10f,%12.10f] %12.10f %12.10f,%12.10f,%12.10f\n",
-//ab_vec.x,ab_vec.y,ab_vec.z,curr_ab_vec.x,curr_ab_vec.y,curr_ab_vec.z,glm::dot(ab_vec,curr_ab_vec),axis.x,axis.y,axis.z);
 	} else if (bMB2 && bCtrl) {
 		curr_ab_vec = ab.GetVector(x,y);
 		vec3 delta = (curr_ab_vec-ab_vec)*view_vector_length;	//-- in camera space 
@@ -265,11 +285,11 @@ void cursor_pos_callback (GLFWwindow* window, double x, double y) {
 void button_callback (GLFWwindow* window, int button, int action, int mods) {
 	double x,y;
 	glfwGetCursorPos(window,&x,&y);
-	printf("BUTTON - %6.1f %6.1f %d %d %d\n",x,y,button,action,mods);
+	//printf("BUTTON - %6.1f %6.1f %d %d %d\n",x,y,button,action,mods);
 	if (button==GLFW_MOUSE_BUTTON_1 && action==GLFW_PRESS) {
 		vec3 pointer;
 		pointer = ab.GetVector(x,y);
-		printf("%6.4f %6.4f %6.4f\n",pointer.x,pointer.y,pointer.z);
+		//printf("%6.4f %6.4f %6.4f\n",pointer.x,pointer.y,pointer.z);
 	} 
 }
 
